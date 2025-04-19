@@ -1,0 +1,19 @@
+name: Auto Deploy to Firebase
+
+on:
+  push:
+    branches: [ "main" ]  # 监听main分支的推送
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # 使用GitHub的服务器环境
+    
+    steps:
+    - name: 拉取代码
+      uses: actions/checkout@v4  # 官方提供的代码拉取工具
+    
+    - name: 安装Firebase工具
+      run: npm install -g firebase-tools  # 在服务器安装CLI
+    
+    - name: 部署到Firebase
+      run: firebase deploy --only hosting --token ${{ secrets.FIREBASE_TOKEN }}
