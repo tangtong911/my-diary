@@ -1,0 +1,54 @@
+<!-- 文件：login.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>日记平台 - 登录</title>
+  <!-- 引入Firebase的登录功能库 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+</head>
+<body>
+  <h1>欢迎登录日记平台</h1>
+  <input type="email" id="email" placeholder="邮箱">
+  <input type="password" id="password" placeholder="密码">
+  <button onclick="login()">登录</button>
+  <button onclick="signup()">注册</button>
+</body>
+<script>
+  // Firebase配置
+  const firebaseConfig = {
+    apiKey: "AIzaSyAhlNtfxQwzWD7yuK_jRO0HTuLF-nLg9EA",
+    authDomain: "diary-20048.firebaseapp.com",
+    projectId: "diary-20048",
+    storageBucket: "diary-20048.firebasestorage.app",
+    messagingSenderId: "306946757377",
+    appId: "1:306946757377:web:72f7278071e8a2eddc4100",
+    measurementId: "G-9CHPWTGE27"
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  // 注册函数
+  function signup() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    // 调用Firebase注册接口
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+      .then(() => {
+        alert("注册成功！");
+        window.location.href = "diary-list.html"; // 注册成功后跳转
+      })
+      .catch((error) => {
+        alert("注册失败：" + error.message); // 显示具体错误信息
+      });
+  }
+  // 登录函数
+  function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .then(() => window.location.href = "diary-list.html") // 跳转到日记列表页
+    .catch(error => alert("登录失败：" + error.message));
+}
+</script>
+</html>

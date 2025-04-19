@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>日记列表</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      max-width: 800px; 
+      margin: 20px auto; 
+      padding: 20px; 
+    }
+    .diary-item { 
+      background: #fff;
+      border: 1px solid #ddd; 
+      padding: 15px; 
+      margin-bottom: 15px; 
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .delete-btn { 
+      background: #ff4444; 
+      color: white; 
+      border: none; 
+      padding: 8px 16px;
+      border-radius: 4px; 
+      cursor: pointer; 
+      float: right;
+      transition: opacity 0.3s;
+    }
+    .delete-btn:hover {
+      opacity: 0.8;
+    }
+    video, img {
+      max-width: 100%;
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>我的日记</h1>
+  <button onclick="logout()">退出登录</button>
+  <button onclick="location.href='edit-diary.html'">写新日记</button>
+  <div id="diary-list"></div>
+
+  <script>
+    // Firebase配置
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhlNtfxQwzWD7yuK_jRO0HTuLF-nLg9EA",
+      authDomain: "diary-20048.firebaseapp.com",
+      projectId: "diary-20048",
+      storageBucket: "diary-20048.firebasestorage.app",
+      messagingSenderId: "306946757377",
+      appId: "1:306946757377:web:72f7278071e8a2eddc4100",
+      measurementId: "G-9CHPWTGE27"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 认证状态监听
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        loadDiaries(user.uid);
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    // 加载日记
+    async function loadDiaries(userId) {
+      try {
+        const querySnapshot = await db.collection("diaries")
+          .where("userId", "==", userId)
+          .orderBy("createdAt", "desc")
+          .get();
+
+        const diaryList = document.getElementById("diary-list");
+        diaryList.innerHTML = "";
+
+        querySnapshot.forEach(doc => {
+          const diary = doc.data();
+          const diaryId = doc.id;
+          const date = diary.createdAt?.toDate()?.toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          }) || "未知时间";
+
+          // 处理附件
+          let mediaHtml = '';
+          if (diary.attachments?.length > 0) {
+            diary.attachments.forEach(url => {
+              if (url.match(/\.(jpe?g|png|gif|webp)$/i)) {
+                mediaHtml += `<img src="${url}" alt="日记图片">`;
+              } else if (url.match(/\.(mp4|mov|webm)$/i)) {
+                mediaHtml += `<video controls><source src="${url}"></video>`;
+              }
+            });
+          }
+
+          // 生成条目
+          diaryList.innerHTML += `
+            <div class="diary-item">
+              <button class="delete-btn" onclick="deleteDiary('${diaryId}')">删除</button>
+              <h3>${diary.title || "无标题"}</h3>
+              <p>${diary.content}</p>
+              ${mediaHtml}
+              <small>${date}</small>
+            </div>
+          `;
+        });
+      } catch (error) {
+        console.error("加载失败:", error);
+        alert("加载日记失败，请检查控制台！");
+      }
+    }
+
+    // 删除日记
+    async function deleteDiary(diaryId) {
+      if (!confirm("确定要永久删除这篇日记吗？")) return;
+      
+      try {
+        await db.collection("diaries").doc(diaryId).delete();
+        loadDiaries(firebase.auth().currentUser.uid);
+      } catch (error) {
+        console.error("删除失败:", error);
+        alert("删除失败：" + error.message);
+      }
+    }
+
+    // 退出登录
+    function logout() {
+      firebase.auth().signOut()
+        .then(() => window.location.href = "login.html")
+        .catch(error => console.error("退出失败:", error));
+    }
+  </script>
+</body>
+</html>

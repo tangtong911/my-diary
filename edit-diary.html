@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>写日记</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  
+  <!-- Cloudinary SDK -->
+  <script src="https://unpkg.com/cloudinary-core@2.11.4/cloudinary-core-shrinkwrap.min.js"></script>
+  <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+</head>
+<body>
+  <h1>写日记</h1>
+  
+  <!-- 输入区域 -->
+  <input type="text" id="diary-title" placeholder="日记标题" style="width: 300px;"><br>
+  <textarea id="diary-content" placeholder="写点什么吧..." rows="10" cols="50"></textarea><br>
+  
+  <!-- 上传按钮 -->
+  <button id="uploadBtn">上传图片/视频</button>
+  <div id="preview-area"></div>
+  
+  <!-- 操作按钮 -->
+  <button onclick="saveDiary()">保存日记</button>
+  <a href="diary-list.html">返回列表</a>
+
+  <script>
+    // Firebase配置
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhlNtfxQwzWD7yuK_jRO0HTuLF-nLg9EA",
+      authDomain: "diary-20048.firebaseapp.com",
+      projectId: "diary-20048",
+      storageBucket: "diary-20048.firebasestorage.app",
+      messagingSenderId: "306946757377",
+      appId: "1:306946757377:web:72f7278071e8a2eddc4100",
+      measurementId: "G-9CHPWTGE27"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Cloudinary配置
+    const cloudName = 'dbmknyfrm';
+    const uploadPreset = 'zhymzlzo';
+    let attachments = [];
+
+    // 初始化事件监听
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("uploadBtn").addEventListener("click", openCloudinaryWidget);
+    });
+
+    // 统一上传处理函数
+    function openCloudinaryWidget() {
+      console.log("Cloudinary 对象:", window.cloudinary);
+      window.cloudinary.openUploadWidget({
+        cloudName: cloudName,
+        uploadPreset: uploadPreset,
+        sources: ['local'],
+        multiple: true,
+        resourceType: 'auto',
+        maxFileSize: 10485760,
+        clientAllowedFormats: ['jpg', 'png', 'mp4', 'mov'],
+        showAdvancedOptions: false
+      }, (error, result) => {
+        if (error) {
+          console.error("上传错误:", error);
+          alert(`上传失败: ${error.message}`);
+          return;
+        }
+        if (result.event === 'success') {
+          const fileUrl = result.info.secure_url;
+          attachments.push(fileUrl);
+          displayPreview(fileUrl, result.info.resource_type);
+        }
+      });
+    }
+
+    // 显示预览
+    function displayPreview(url, resourceType) {
+      const previewArea = document.getElementById('preview-area');
+      const html = resourceType === 'image' 
+        ? `<img src="${url}" style="max-width: 200px; margin: 10px;">`
+        : `<video controls src="${url}" style="max-width: 300px; margin: 10px;"></video>`;
+      previewArea.innerHTML += html;
+    }
+
+    // 保存日记
+    async function saveDiary() {
+      const user = firebase.auth().currentUser;
+      if (!user) return alert('请先登录！');
+
+      try {
+        await db.collection('diaries').add({
+          userId: user.uid,
+          title: document.getElementById('diary-title').value,
+          content: document.getElementById('diary-content').value,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          attachments: attachments
+        });
+        alert('保存成功！');
+        window.location.href = 'diary-list.html';
+      } catch (error) {
+        console.error("保存失败:", error);
+        alert('保存失败: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>
